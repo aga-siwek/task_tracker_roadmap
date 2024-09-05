@@ -4,88 +4,94 @@ import os
 import json
 import datetime
 
-# general variables
-tracker_path = Path.cwd()
-commend = sys.argv[1]
-today_data = str(datetime.datetime.now())
+
+def id_creator(data_from_json):
+    if bool(data_from_json):
+        next_id = int(max(data_from_json.keys())) + 1
+        return next_id
+    else:
+        return 0
 
 
-# function for commend ADD
+def check_if_file_exist():
+    # check if  directory exist
+    check_path = Path.cwd() / Path("task_management")
+    if not os.path.exists(check_path):
+        os.mkdir("task_management")
 
-# for 1 task
-def add_first_task(description, status, currently_data):
-    task = {"0": {"description": description, "status": status,
-                  "created_at": currently_data, "updated_at": "NO DATA"}}
-    file_path = Path.cwd() / Path("task_management", "data.json")
-    with open(file_path, "w") as file:
-        json.dump(task, file, indent=4)
-
-
-# create id for 2,3,4 etc. tasks
-def next_id_create():
-    file_path = Path.cwd() / Path("task_management", "data.json")
-    with open(file_path, 'r+') as file:
-        data = json.load(file)
-        number_of_dicts = int(max(data.keys())) + 1
-        return number_of_dicts
+    # check if JSON file exist
+    check_path = Path.cwd() / Path("task_management", "data.json")
+    if not os.path.exists(check_path):
+        with open(check_path, "w") as file:
+            json.dump({}, file)
 
 
-# create 2,3,4 etc. tasks
-def add_next_task(description, status, currently_data):
-    task = {str(next_id_create()): {"description": description, "status": status,
-                                    "created_at": currently_data, "updated_at": "NO DATA"}}
-
+def add_task(description, currently_data):
     file_path = Path.cwd() / Path("task_management", "data.json")
     with open(file_path, 'r+') as file:
         data = json.load(file)
+
+        task_id = id_creator(data)
+
+        task = {str(task_id): {"description": description, "status": "todo",
+                               "created_at": currently_data, "updated_at": currently_data}}
         data.update(task)
         file.seek(0)
         json.dump(data, file, indent=4)
-        file.truncate()
+
+    print(f"Task added successfully (ID: {task_id})")
 
 
-# check if folder for management  task exist, if not add 1 task if yes add next task
-def task_adder(add_path, description, status, currently_data):
-    # check if folder exist
-    check_path = add_path / Path("task_management")
-    if not os.path.exists(check_path):
-        os.mkdir("task_management")
-        add_first_task(description, status, currently_data)
-    else:
-        add_next_task(description, status, currently_data)
-
-
-# function for commend UPDATE
-
-def update_file(id_for_task, what_change, change_text, currently_date):
+# UPDATE description
+def update_file(id_for_task, change_text, currently_date):
     file_path = Path.cwd() / Path("task_management", "data.json")
     with open(file_path, 'r+') as file:
         data = json.load(file)
     if id_for_task in data:
-        data[id_for_task][what_change] = change_text
+        data[id_for_task]["description"] = change_text
         data[id_for_task]["updated_at"] = currently_date
     else:
-        print("wrong id")
+        print("ID doesn't exist")
+        return False
 
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
+    print(f"Task ID: {id_for_task} was updated")
 
-def mark_status(id_for_task, status, currently_date):
+
+# MARK status
+def mark_status(id_for_task, commend, currently_date):
     file_path = Path.cwd() / Path("task_management", "data.json")
     with open(file_path, 'r+') as file:
         data = json.load(file)
     if id_for_task in data:
-        data[id_for_task]["status"] = status
-        data[id_for_task]["updated_at"] = currently_date
+        if "todo" in commend:
+            data[id_for_task]["status"] = "todo"
+            data[id_for_task]["updated_at"] = currently_date
+            print(f"'todo' for task ID: {id_for_task}.")
+        elif "in-progress" in commend:
+            data[id_for_task]["status"] = "in-progress"
+            data[id_for_task]["updated_at"] = currently_date
+            print(f"'in progress' for task ID: {id_for_task}.")
+        elif "done" in commend:
+            data[id_for_task]["status"] = "done"
+            data[id_for_task]["updated_at"] = currently_date
+            print(f"'done' for task ID: {id_for_task}.")
+        else:
+            print("status doesn't exist")
+            return False
+
     else:
-        print("wrong id")
+        print("ID doesn't exist")
+        return False
 
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
+    print("Status has been successfully changed")
 
 
-# function for commend DELETE
+# DELETE task
 def delete_file(id_for_task):
     file_path = Path.cwd() / Path("task_management", "data.json")
     with open(file_path, 'r') as file:
@@ -94,9 +100,10 @@ def delete_file(id_for_task):
         del data[id_for_task]
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
+    print(f"Task ID: {id_for_task} was deleted")
 
 
-# function for commend LIST
+# LIST tasks
 def list_status(status):
     file_path = Path.cwd() / Path("task_management", "data.json")
     with open(file_path, 'r') as file:
@@ -109,27 +116,54 @@ def list_status(status):
                 print(value["description"])
 
 
+def process_task():
+    commend = sys.argv[1].lower()
+    today_data = str(datetime.datetime.now())
+
+    check_if_file_exist()
+
+    try:
+        if commend == "add":
+            task_description = sys.argv[2]
+            add_task(task_description, today_data)
+
+        elif commend == "update":
+            task_id = sys.argv[2]
+            update_text = sys.argv[3]
+            update_file(task_id, update_text, today_data)
+
+        elif "mark" in commend:
+            task_id = sys.argv[2]
+            mark_status(task_id, commend, today_data)
+
+        elif commend == "delete":
+            task_id = sys.argv[2]
+            delete_file(task_id)
+
+        elif commend == "list":
+            if len(sys.argv) == 2:
+                status_name = "all"
+            else:
+                status_name = sys.argv[2]
+            list_status(status_name)
+
+        else:
+            print("commend doesn't exist \n "
+                  "You can use a few commends: "
+                  "\n ADD: python task.py add 'task description'"
+                  "\n UPDATE: python task.py update 'task id' 'update text'"
+                  "\n MARK: python task.py mark+'task id' 'status name'"
+                  "\n LIST: python task.py list for all or python task.py list 'status name'"
+                  "\n DELETE: python task.py delete 'task id'")
+
+    except IndexError:
+        print("You can use a few commends: "
+              "\n ADD: python task.py add 'task description'"
+              "\n UPDATE: python task.py update 'task id' 'update text'"
+              "\n MARK: python task.py mark+'task id' 'status name'"
+              "\n LIST: python task.py list for all or python task.py list 'status name'"
+              "\n DELETE: python task.py delete 'task id'")
+
+
 if __name__ == '__main__':
-    if commend == "add":
-        task_description = sys.argv[2]
-        task_status = sys.argv[3]
-        task_adder(tracker_path, task_description, task_status, today_data)
-
-    if commend == "update":
-        task_id = sys.argv[2]
-        changed_position = sys.argv[3]
-        update_text = sys.argv[4]
-        update_file(task_id, changed_position, update_text, today_data)
-
-    if commend == "mark":
-        task_id = sys.argv[2]
-        status_name = sys.argv[3]
-        mark_status(task_id, status_name, today_data)
-
-    if commend == "delete":
-        task_id = sys.argv[2]
-        delete_file(task_id)
-
-    if commend == "list":
-        status_name = sys.argv[2]
-        list_status(status_name)
+    process_task()
