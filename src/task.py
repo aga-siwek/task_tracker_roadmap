@@ -4,13 +4,16 @@ import os
 import json
 import datetime
 
+import mysql_connection as db_connection
 
-def id_creator(data_from_json):
-    if bool(data_from_json):
-        next_id = int(max(data_from_json.keys())) + 1
-        return next_id
-    else:
-        return 0
+
+
+# def id_creator(data_from_json):
+#     if bool(data_from_json):
+#         next_id = int(max(data_from_json.keys())) + 1
+#         return next_id
+#     else:
+#         return 0
 
 
 def check_if_file_exist():
@@ -34,7 +37,7 @@ def add_task(description, currently_data):
         task_id = id_creator(data)
 
         task = {str(task_id): {"description": description, "status": "todo",
-                               "created_at": currently_data, "updated_at": currently_data}}
+                               "created_at": currently_data, "updated_at": currently_data, "id": task_id}}
         data.update(task)
         file.seek(0)
         json.dump(data, file, indent=4)
@@ -111,9 +114,9 @@ def list_status(status):
 
         for key, value in data.items():
             if status == "all":
-                print(value["description"])
+                print(str(value["id"]) + ". " + value["description"])
             if value["status"] == status:
-                print(value["description"])
+                print(str(value["id"]) + ". " + value["description"])
 
 
 def process_task():

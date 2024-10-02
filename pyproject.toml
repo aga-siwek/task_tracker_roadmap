@@ -2,4 +2,4 @@
 name = "task_tracker"
 description = "add, delete, change task"
 version = "0.0.1"
-dependencies = []
+dependencies = ["pysqllite3 >= 0.5.3."]
